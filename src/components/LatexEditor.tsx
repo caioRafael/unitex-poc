@@ -43,7 +43,7 @@ export function LatexEditor({ latex, setLatex }: LatexEditorProps) {
         cursorBlinking: "smooth",
         cursorSmoothCaretAnimation: "on",
       }}
-      className="w-1/2 h-full bg-[#1E1E2E]"
+      className="h-full w-full bg-[#1E1E2E]"
     />
   )
 }

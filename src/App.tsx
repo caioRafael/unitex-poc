@@ -86,33 +86,31 @@ Olá mundo!
   }
 
   return (
-    <>
-      <button onClick={handleCompile} disabled={status === "compiling"}>
-        Compile
-      </button>
-      <div className="flex flex-row justify-center items-center h-screen w-screen bg-gray-100">
-        <LatexEditor latex={latex} setLatex={setLatex} />
-        <div className="relative h-screen w-1/2">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-100">
+      <div className="flex shrink-0 items-center border-b border-gray-200 bg-white px-3 py-2">
+        <button
+          onClick={handleCompile}
+          disabled={status === "compiling"}
+          className="rounded bg-gray-900 px-3 py-1 text-sm text-white disabled:opacity-50"
+        >
+          Compile
+        </button>
+      </div>
+      <div className="flex min-h-0 min-w-0 flex-1">
+        <div className="h-full w-1/2 min-w-0">
+          <LatexEditor latex={latex} setLatex={setLatex} />
+        </div>
+        <div className="h-full w-1/2 min-w-0">
           {pdf ? (
             <PdfPreview urlPdf={pdf} />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gray-100">
-              <span>Waiting for preview...</span>
-            </div>
-          )}
-          {status === "compiling" && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100/70">
-              <span>Compiling...</span>
-            </div>
-          )}
-          {status === "error" && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded bg-red-600 px-3 py-1 text-white">
-              Error
+            <div className="flex h-full w-full items-center justify-center bg-neutral-200 text-gray-500">
+              Waiting for preview...
             </div>
           )}
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
