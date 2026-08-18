@@ -18,7 +18,7 @@ E = mc^2
 \end{document}
 `;
 
-compileLatex(latex).then((result) => {
+compileLatex({ "main.tex": latex }, "main.tex").then((result) => {
   console.log("Resultado:", result);
 
   if (result.success && result.pdf) {

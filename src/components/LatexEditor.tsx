@@ -4,25 +4,29 @@ import {
   LATEX_THEME_ID,
   registerLatexLanguage,
 } from "../latex/monacoLatex"
+import { fileExtension } from "../project/files"
 
 interface LatexEditorProps {
-  latex: string
-  setLatex: (latex: string) => void
+  path: string
+  value: string
+  onChange: (value: string) => void
 }
 
-export function LatexEditor({ latex, setLatex }: LatexEditorProps) {
+export function LatexEditor({ path, value, onChange }: LatexEditorProps) {
+  const language = languageForPath(path)
+
   return (
     <Editor
-      language={LATEX_LANGUAGE_ID}
-      path="main.tex"
+      language={language}
+      path={path}
       theme="vs-dark"
-      value={latex}
-      onChange={(value) => setLatex(value ?? "")}
+      value={value}
+      onChange={(next) => onChange(next ?? "")}
       beforeMount={registerLatexLanguage}
       onMount={(editor, monaco) => {
         const model = editor.getModel()
         if (model) {
-          monaco.editor.setModelLanguage(model, LATEX_LANGUAGE_ID)
+          monaco.editor.setModelLanguage(model, language)
         }
         monaco.editor.setTheme(LATEX_THEME_ID)
       }}
@@ -46,4 +50,24 @@ export function LatexEditor({ latex, setLatex }: LatexEditorProps) {
       className="h-full w-full bg-[#1E1E2E]"
     />
   )
+}
+
+function languageForPath(path: string) {
+  switch (fileExtension(path)) {
+    case "tex":
+    case "sty":
+    case "cls":
+    case "clo":
+    case "ltx":
+    case "dtx":
+    case "def":
+    case "bib":
+      return LATEX_LANGUAGE_ID
+    case "json":
+      return "json"
+    case "md":
+      return "markdown"
+    default:
+      return "plaintext"
+  }
 }
