@@ -1,4 +1,4 @@
-import { isTextFile, normalizePath, shouldIgnore } from "./files"
+import { isTextFile, joinPath, normalizePath, shouldIgnore } from "./files"
 import type { ProjectFiles } from "./types"
 
 type CollectedFile = {
@@ -6,16 +6,27 @@ type CollectedFile = {
   file: File
 }
 
-export async function filesFromFileList(fileList: FileList) {
+type ReadOptions = {
+  stripRoot?: boolean
+  baseDir?: string
+}
+
+export async function filesFromFileList(
+  fileList: FileList,
+  options: ReadOptions = {},
+) {
   const collected = Array.from(fileList).map((file) => ({
     path: normalizePath(file.webkitRelativePath || file.name),
     file,
   }))
 
-  return filesFromCollected(collected)
+  return filesFromCollected(collected, options)
 }
 
-export async function filesFromDataTransfer(dataTransfer: DataTransfer) {
+export async function filesFromDataTransfer(
+  dataTransfer: DataTransfer,
+  options: ReadOptions = {},
+) {
   const entries = Array.from(dataTransfer.items)
     .map((item) => item.webkitGetAsEntry?.())
     .filter((entry): entry is FileSystemEntry => Boolean(entry))
@@ -24,26 +35,35 @@ export async function filesFromDataTransfer(dataTransfer: DataTransfer) {
     const collected = (
       await Promise.all(entries.map((entry) => collectEntry(entry, "")))
     ).flat()
-    return filesFromCollected(collected)
+    return filesFromCollected(collected, options)
   }
 
   if (dataTransfer.files.length > 0) {
-    return filesFromFileList(dataTransfer.files)
+    return filesFromFileList(dataTransfer.files, options)
   }
 
   return {}
 }
 
-async function filesFromCollected(collected: CollectedFile[]) {
+async function filesFromCollected(
+  collected: CollectedFile[],
+  options: ReadOptions = {},
+) {
   const visible = collected.filter(
     (item) => item.path && !shouldIgnore(item.path),
   )
-  const prefix = commonRootPrefix(visible.map((item) => item.path))
+  const prefix =
+    options.stripRoot === false
+      ? ""
+      : commonRootPrefix(visible.map((item) => item.path))
   const files: ProjectFiles = {}
 
   await Promise.all(
     visible.map(async ({ path, file }) => {
-      const relative = normalizePath(path.slice(prefix.length))
+      const relative = joinPath(
+        options.baseDir ?? "",
+        normalizePath(path.slice(prefix.length)),
+      )
       if (!relative || shouldIgnore(relative)) return
       files[relative] = isTextFile(relative)
         ? await file.text()

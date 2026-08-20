@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react"
 import {
+  allocatePath,
+  ancestorDirs,
   buildFileTree,
   collectDirPaths,
+  fileName,
   isTexFile,
+  isValidEntryName,
+  joinPath,
+  parentDir,
 } from "../project/files"
 import type { FileTreeNode, ProjectFiles } from "../project/types"
 import { filesFromDataTransfer, filesFromFileList } from "../project/upload"
@@ -14,6 +20,18 @@ interface FileTreeProps {
   onSelect: (path: string) => void
   onSetMain: (path: string) => void
   onLoadProject: (files: ProjectFiles) => void
+  onAddFiles: (files: ProjectFiles) => void
+  onCreateFile: (path: string) => void
+  onCreateFolder: (path: string) => void
+}
+
+type Draft = { dir: string; kind: "file" | "dir"; name: string }
+
+type ContextMenuState = {
+  x: number
+  y: number
+  dir: string
+  filePath: string | null
 }
 
 export function FileTree({
@@ -23,10 +41,20 @@ export function FileTree({
   onSelect,
   onSetMain,
   onLoadProject,
+  onAddFiles,
+  onCreateFile,
+  onCreateFolder,
 }: FileTreeProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const openFolderRef = useRef<HTMLInputElement>(null)
+  const addFilesRef = useRef<HTMLInputElement>(null)
+  const addFolderRef = useRef<HTMLInputElement>(null)
+  const importDirRef = useRef("")
   const dragCountRef = useRef(0)
   const [dragOver, setDragOver] = useState(false)
+  const [dropDir, setDropDir] = useState<string | null>(null)
+  const [targetDir, setTargetDir] = useState("")
+  const [draft, setDraft] = useState<Draft | null>(null)
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const pathKey = Object.keys(files).sort().join("\0")
   const tree = useMemo(
     () => buildFileTree(pathKey ? pathKey.split("\0") : []),
@@ -37,25 +65,98 @@ export function FileTree({
   )
 
   useEffect(() => {
-    const input = inputRef.current
-    if (!input) return
-    input.setAttribute("webkitdirectory", "")
-    input.setAttribute("directory", "")
+    for (const input of [openFolderRef.current, addFolderRef.current]) {
+      if (!input) continue
+      input.setAttribute("webkitdirectory", "")
+      input.setAttribute("directory", "")
+    }
   }, [])
+
+  const expandDirs = (dirs: string[]) => {
+    setExpanded((current) => {
+      const next = new Set(current)
+      for (const dir of dirs) {
+        if (dir) next.add(dir)
+      }
+      return next
+    })
+  }
 
   const loadProject = (next: ProjectFiles) => {
     if (Object.keys(next).length === 0) return
     setExpanded(new Set(collectDirPaths(buildFileTree(Object.keys(next)))))
+    setTargetDir("")
+    setDraft(null)
+    setContextMenu(null)
     onLoadProject(next)
   }
 
+  const mergeFiles = (incoming: ProjectFiles) => {
+    if (Object.keys(incoming).length === 0) return
+    expandDirs([
+      ...Object.keys(incoming).flatMap((path) => ancestorDirs(path)),
+      ...collectDirPaths(buildFileTree(Object.keys(incoming))),
+    ])
+    onAddFiles(incoming)
+  }
+
   const toggleDir = (path: string) => {
+    setTargetDir(path)
     setExpanded((current) => {
       const next = new Set(current)
       if (next.has(path)) next.delete(path)
       else next.add(path)
       return next
     })
+  }
+
+  const startDraft = (kind: "file" | "dir", dir = targetDir) => {
+    setTargetDir(dir)
+    expandDirs(ancestorDirs(joinPath(dir, "placeholder")))
+    if (dir) expandDirs([dir])
+    setDraft({
+      dir,
+      kind,
+      name: defaultDraftName(files, dir, kind),
+    })
+    setContextMenu(null)
+  }
+
+  const openContextMenu = (
+    event: MouseEvent,
+    dir: string,
+    filePath: string | null = null,
+  ) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setTargetDir(dir)
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      dir,
+      filePath,
+    })
+  }
+
+  const importInto = (dir: string, kind: "files" | "folder") => {
+    importDirRef.current = dir
+    setTargetDir(dir)
+    setContextMenu(null)
+    if (kind === "files") addFilesRef.current?.click()
+    else addFolderRef.current?.click()
+  }
+
+  const submitDraft = (name: string) => {
+    if (!draft) return
+    const path = joinPath(draft.dir, name.trim())
+    if (draft.kind === "dir") {
+      expandDirs([path, ...ancestorDirs(`${path}/x`)])
+      onCreateFolder(path)
+    } else {
+      expandDirs(ancestorDirs(path))
+      onCreateFile(path)
+    }
+    setDraft(null)
   }
 
   return (
@@ -70,34 +171,48 @@ export function FileTree({
       }}
       onDragOver={(event) => {
         event.preventDefault()
+        setDropDir("")
       }}
       onDragLeave={() => {
         dragCountRef.current -= 1
         if (dragCountRef.current <= 0) {
           dragCountRef.current = 0
           setDragOver(false)
+          setDropDir(null)
         }
       }}
       onDrop={(event) => {
         event.preventDefault()
         dragCountRef.current = 0
         setDragOver(false)
-        void filesFromDataTransfer(event.dataTransfer).then(loadProject)
+        const baseDir = dropDir ?? ""
+        setDropDir(null)
+        void filesFromDataTransfer(event.dataTransfer, {
+          stripRoot: false,
+          baseDir,
+        }).then(mergeFiles)
       }}
+      onContextMenu={(event) => openContextMenu(event, "")}
     >
-      <div className="flex items-center justify-between gap-2 border-b border-[#2A2B3C] px-3 py-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-[#7F848E]">
-          Files
-        </span>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="rounded bg-[#2A2B3C] px-2 py-1 text-xs text-[#ABB2BF] hover:bg-[#3E4452]"
-        >
-          Upload folder
-        </button>
+      <div className="border-b border-[#2A2B3C] px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-[#7F848E]">
+            Files
+          </span>
+          <button
+            type="button"
+            title="Replace the virtual tree with a folder from disk"
+            onClick={() => openFolderRef.current?.click()}
+            className="rounded bg-[#2A2B3C] px-2 py-1 text-xs text-[#ABB2BF] hover:bg-[#3E4452]"
+          >
+            Open folder
+          </button>
+        </div>
+        <p className="mt-2 text-[10px] text-[#7F848E]">
+          Right-click a folder to add files
+        </p>
         <input
-          ref={inputRef}
+          ref={openFolderRef}
           type="file"
           multiple
           className="hidden"
@@ -109,11 +224,54 @@ export function FileTree({
             event.target.value = ""
           }}
         />
+        <input
+          ref={addFilesRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(event) => {
+            const list = event.target.files
+            const baseDir = importDirRef.current || targetDir
+            if (list && list.length > 0) {
+              void filesFromFileList(list, {
+                stripRoot: false,
+                baseDir,
+              }).then(mergeFiles)
+            }
+            event.target.value = ""
+          }}
+        />
+        <input
+          ref={addFolderRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(event) => {
+            const list = event.target.files
+            const baseDir = importDirRef.current || targetDir
+            if (list && list.length > 0) {
+              void filesFromFileList(list, {
+                stripRoot: false,
+                baseDir,
+              }).then(mergeFiles)
+            }
+            event.target.value = ""
+          }}
+        />
       </div>
       <div className="min-h-0 flex-1 overflow-auto py-1">
-        {tree.length === 0 ? (
+        {draft?.dir === "" && (
+          <DraftInput
+            depth={0}
+            kind={draft.kind}
+            initialName={draft.name}
+            onSubmit={submitDraft}
+            onCancel={() => setDraft(null)}
+          />
+        )}
+        {tree.length === 0 && !draft ? (
           <p className="px-3 py-4 text-xs text-[#7F848E]">
-            Upload a LaTeX project folder to get started.
+            Right-click here to create a file. Changes stay in the browser.
           </p>
         ) : (
           tree.map((node) => (
@@ -123,14 +281,208 @@ export function FileTree({
               depth={0}
               activePath={activePath}
               mainTexPath={mainTexPath}
+              targetDir={targetDir}
+              dropDir={dropDir}
               expanded={expanded}
-              onSelect={onSelect}
+              draft={draft}
+              onSelect={(path) => {
+                setTargetDir(parentDir(path))
+                onSelect(path)
+              }}
               onSetMain={onSetMain}
               onToggle={toggleDir}
+              onContextMenu={openContextMenu}
+              onDropDir={setDropDir}
+              onMergeInto={(dir, dataTransfer) => {
+                void filesFromDataTransfer(dataTransfer, {
+                  stripRoot: false,
+                  baseDir: dir,
+                }).then(mergeFiles)
+              }}
+              onSubmitDraft={submitDraft}
+              onCancelDraft={() => setDraft(null)}
             />
           ))
         )}
       </div>
+      {contextMenu && (
+        <TreeContextMenu
+          menu={contextMenu}
+          onNewFile={() => startDraft("file", contextMenu.dir)}
+          onNewFolder={() => startDraft("dir", contextMenu.dir)}
+          onAddFiles={() => importInto(contextMenu.dir, "files")}
+          onAddFolder={() => importInto(contextMenu.dir, "folder")}
+          onSetMain={
+            contextMenu.filePath && isTexFile(contextMenu.filePath)
+              ? () => {
+                  const path = contextMenu.filePath
+                  if (!path) return
+                  onSetMain(path)
+                  onSelect(path)
+                  setContextMenu(null)
+                }
+              : undefined
+          }
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function defaultDraftName(
+  files: ProjectFiles,
+  dir: string,
+  kind: "file" | "dir",
+) {
+  const base = kind === "file" ? "untitled.tex" : "untitled"
+  return fileName(allocatePath(files, joinPath(dir, base)))
+}
+
+function TreeContextMenu({
+  menu,
+  onNewFile,
+  onNewFolder,
+  onAddFiles,
+  onAddFolder,
+  onSetMain,
+  onClose,
+}: {
+  menu: ContextMenuState
+  onNewFile: () => void
+  onNewFolder: () => void
+  onAddFiles: () => void
+  onAddFolder: () => void
+  onSetMain?: () => void
+  onClose: () => void
+}) {
+  const menuRef = useRef<HTMLDivElement>(null)
+  const left = Math.min(menu.x, window.innerWidth - 188)
+  const top = Math.min(menu.y, window.innerHeight - 220)
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) onClose()
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose()
+    }
+
+    window.addEventListener("pointerdown", onPointerDown)
+    window.addEventListener("keydown", onKeyDown)
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown)
+      window.removeEventListener("keydown", onKeyDown)
+    }
+  }, [onClose])
+
+  return (
+    <div
+      ref={menuRef}
+      role="menu"
+      style={{ left, top }}
+      className="fixed z-50 min-w-44 rounded border border-[#3B3C4A] bg-[#252536] py-1 text-xs text-[#ABB2BF] shadow-lg"
+      onPointerDown={(event) => event.stopPropagation()}
+      onContextMenu={(event) => event.stopPropagation()}
+    >
+      <p className="truncate px-3 py-1.5 text-[10px] uppercase tracking-wide text-[#7F848E]">
+        {menu.dir || "/"}
+      </p>
+      <MenuItem onClick={onNewFile}>New File</MenuItem>
+      <MenuItem onClick={onNewFolder}>New Folder</MenuItem>
+      <div className="my-1 border-t border-[#3B3C4A]" />
+      <MenuItem onClick={onAddFiles}>Add Files…</MenuItem>
+      <MenuItem onClick={onAddFolder}>Add Folder…</MenuItem>
+      {onSetMain && (
+        <>
+          <div className="my-1 border-t border-[#3B3C4A]" />
+          <MenuItem onClick={onSetMain}>Set as Main File</MenuItem>
+        </>
+      )}
+    </div>
+  )
+}
+
+function MenuItem({
+  children,
+  onClick,
+}: {
+  children: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className="block w-full px-3 py-1.5 text-left hover:bg-[#3E4452] hover:text-white"
+    >
+      {children}
+    </button>
+  )
+}
+
+function DraftInput({
+  depth,
+  kind,
+  initialName,
+  onSubmit,
+  onCancel,
+}: {
+  depth: number
+  kind: "file" | "dir"
+  initialName: string
+  onSubmit: (name: string) => void
+  onCancel: () => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const doneRef = useRef(false)
+  const [name, setName] = useState(initialName)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+    inputRef.current?.select()
+  }, [])
+
+  const finish = (submit: boolean) => {
+    if (doneRef.current) return
+    doneRef.current = true
+
+    const trimmed = name.trim()
+    if (!submit || !trimmed || !isValidEntryName(trimmed)) {
+      onCancel()
+      return
+    }
+
+    onSubmit(trimmed)
+  }
+
+  return (
+    <div
+      style={{ paddingLeft: 8 + depth * 12 }}
+      className="flex items-center gap-1 py-0.5 pr-2"
+    >
+      <span className="w-3" />
+      {kind === "dir" ? <FolderIcon /> : <FileIcon />}
+      <input
+        ref={inputRef}
+        value={name}
+        aria-label={kind === "dir" ? "New folder name" : "New file name"}
+        onChange={(event) => setName(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault()
+            finish(true)
+          }
+          if (event.key === "Escape") {
+            event.preventDefault()
+            doneRef.current = true
+            onCancel()
+          }
+        }}
+        onBlur={() => finish(true)}
+        className="min-w-0 flex-1 rounded bg-[#2A2B3C] px-1 py-0.5 text-xs text-white outline-none ring-1 ring-[#528BFF]"
+      />
     </div>
   )
 }
@@ -140,51 +492,107 @@ function TreeItem({
   depth,
   activePath,
   mainTexPath,
+  targetDir,
+  dropDir,
   expanded,
+  draft,
   onSelect,
   onSetMain,
   onToggle,
+  onContextMenu,
+  onDropDir,
+  onMergeInto,
+  onSubmitDraft,
+  onCancelDraft,
 }: {
   node: FileTreeNode
   depth: number
   activePath: string | null
   mainTexPath: string | null
+  targetDir: string
+  dropDir: string | null
   expanded: Set<string>
+  draft: Draft | null
   onSelect: (path: string) => void
   onSetMain: (path: string) => void
   onToggle: (path: string) => void
+  onContextMenu: (
+    event: MouseEvent,
+    dir: string,
+    filePath?: string | null,
+  ) => void
+  onDropDir: (path: string | null) => void
+  onMergeInto: (dir: string, dataTransfer: DataTransfer) => void
+  onSubmitDraft: (name: string) => void
+  onCancelDraft: () => void
 }) {
   const paddingLeft = 8 + depth * 12
 
   if (node.kind === "dir") {
     const isOpen = expanded.has(node.path)
+    const isTarget = targetDir === node.path
+    const isDrop = dropDir === node.path
 
     return (
       <div>
         <button
           type="button"
           style={{ paddingLeft }}
-          className="flex w-full items-center gap-1 py-0.5 pr-2 text-left hover:bg-[#2A2B3C]"
+          className={`flex w-full items-center gap-1 py-0.5 pr-2 text-left hover:bg-[#2A2B3C] ${
+            isDrop ? "bg-[#528BFF]/20" : isTarget ? "bg-[#2A2B3C]" : ""
+          }`}
           onClick={() => onToggle(node.path)}
+          onContextMenu={(event) => onContextMenu(event, node.path)}
+          onDragOver={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            onDropDir(node.path)
+          }}
+          onDrop={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            onDropDir(null)
+            onMergeInto(node.path, event.dataTransfer)
+          }}
         >
           <ChevronIcon open={isOpen} />
           <FolderIcon />
           <span className="truncate">{node.name}</span>
         </button>
-        {isOpen &&
-          node.children.map((child) => (
-            <TreeItem
-              key={child.path}
-              node={child}
-              depth={depth + 1}
-              activePath={activePath}
-              mainTexPath={mainTexPath}
-              expanded={expanded}
-              onSelect={onSelect}
-              onSetMain={onSetMain}
-              onToggle={onToggle}
-            />
-          ))}
+        {isOpen && (
+          <>
+            {draft?.dir === node.path && (
+              <DraftInput
+                depth={depth + 1}
+                kind={draft.kind}
+                initialName={draft.name}
+                onSubmit={onSubmitDraft}
+                onCancel={onCancelDraft}
+              />
+            )}
+            {node.children.map((child) => (
+              <TreeItem
+                key={child.path}
+                node={child}
+                depth={depth + 1}
+                activePath={activePath}
+                mainTexPath={mainTexPath}
+                targetDir={targetDir}
+                dropDir={dropDir}
+                expanded={expanded}
+                draft={draft}
+                onSelect={onSelect}
+                onSetMain={onSetMain}
+                onToggle={onToggle}
+                onContextMenu={onContextMenu}
+                onDropDir={onDropDir}
+                onMergeInto={onMergeInto}
+                onSubmitDraft={onSubmitDraft}
+                onCancelDraft={onCancelDraft}
+              />
+            ))}
+          </>
+        )}
       </div>
     )
   }
@@ -199,6 +607,9 @@ function TreeItem({
       className={`group flex w-full items-center gap-1 py-0.5 pr-2 ${
         selected ? "bg-[#3E4452] text-white" : "hover:bg-[#2A2B3C]"
       }`}
+      onContextMenu={(event) =>
+        onContextMenu(event, parentDir(node.path), node.path)
+      }
     >
       <button
         type="button"

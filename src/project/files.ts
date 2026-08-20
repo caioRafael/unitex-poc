@@ -59,12 +59,100 @@ const IGNORED_DIRS = new Set([
 
 const DOCUMENTCLASS_RE = /\\documentclass\b/
 
+export const VIRTUAL_DIR_FILENAME = ".virtualdir"
+
 export function normalizePath(path: string) {
   return path.replaceAll("\\", "/").replace(/^\.\//, "").replace(/\/+/g, "/")
 }
 
 export function fileName(path: string) {
-  return path.split("/").pop() ?? path
+  const parts = normalizePath(path).split("/").filter(Boolean)
+  return parts[parts.length - 1] ?? path
+}
+
+export function parentDir(path: string) {
+  const parts = normalizePath(path).split("/").filter(Boolean)
+  return parts.slice(0, -1).join("/")
+}
+
+export function joinPath(...parts: string[]) {
+  return parts
+    .flatMap((part) => normalizePath(part).split("/"))
+    .filter(Boolean)
+    .join("/")
+}
+
+export function ancestorDirs(path: string) {
+  const parts = normalizePath(path).split("/").filter(Boolean)
+  const dirs: string[] = []
+  let acc = ""
+
+  for (let index = 0; index < parts.length - 1; index++) {
+    acc = acc ? `${acc}/${parts[index]}` : parts[index]
+    dirs.push(acc)
+  }
+
+  return dirs
+}
+
+export function isVirtualDirMarker(path: string) {
+  return fileName(path) === VIRTUAL_DIR_FILENAME
+}
+
+export function dirMarkerPath(dir: string) {
+  return joinPath(dir, VIRTUAL_DIR_FILENAME)
+}
+
+export function isValidEntryName(name: string) {
+  const trimmed = name.trim()
+  return (
+    trimmed.length > 0 &&
+    trimmed !== "." &&
+    trimmed !== ".." &&
+    trimmed !== VIRTUAL_DIR_FILENAME &&
+    !/[\\/]/.test(trimmed)
+  )
+}
+
+export function pathExists(files: ProjectFiles, path: string) {
+  const normalized = normalizePath(path)
+  if (!normalized) return true
+  if (normalized in files) return true
+  const prefix = `${normalized}/`
+  return Object.keys(files).some(
+    (entry) => entry === normalized || entry.startsWith(prefix),
+  )
+}
+
+export function allocatePath(files: ProjectFiles, path: string) {
+  const normalized = normalizePath(path)
+  if (!pathExists(files, normalized)) return normalized
+
+  const name = fileName(normalized)
+  const dir = parentDir(normalized)
+  const dot = name.lastIndexOf(".")
+  const stem = dot > 0 ? name.slice(0, dot) : name
+  const ext = dot > 0 ? name.slice(dot) : ""
+  let index = 1
+
+  while (true) {
+    const candidate = joinPath(dir, `${stem}-${index}${ext}`)
+    if (!pathExists(files, candidate)) return candidate
+    index += 1
+  }
+}
+
+export function mergeProjectFiles(current: ProjectFiles, incoming: ProjectFiles) {
+  const next = { ...current }
+  const added: string[] = []
+
+  for (const [path, content] of Object.entries(incoming)) {
+    const dest = allocatePath(next, path)
+    next[dest] = content
+    added.push(dest)
+  }
+
+  return { files: next, added }
 }
 
 export function fileExtension(path: string) {
@@ -102,10 +190,12 @@ const TEX_SEARCH_EXTENSIONS = new Set([
 ])
 
 export function filesForCompile(files: ProjectFiles): ProjectFiles {
-  const next: ProjectFiles = { ...files }
+  const next: ProjectFiles = Object.fromEntries(
+    Object.entries(files).filter(([path]) => !isVirtualDirMarker(path)),
+  )
   const uniqueByName = new Map<string, string>()
 
-  for (const path of Object.keys(files)) {
+  for (const path of Object.keys(next)) {
     const name = fileName(path)
     if (!TEX_SEARCH_EXTENSIONS.has(fileExtension(name))) continue
     const existing = uniqueByName.get(name)
@@ -184,7 +274,10 @@ export function buildFileTree(paths: string[]): FileTreeNode[] {
       const isFile = index === parts.length - 1
 
       if (isFile) {
-        if (!current.some((node) => node.kind === "file" && node.path === acc)) {
+        if (
+          !isVirtualDirMarker(acc) &&
+          !current.some((node) => node.kind === "file" && node.path === acc)
+        ) {
           current.push({ kind: "file", name, path: acc })
         }
         continue

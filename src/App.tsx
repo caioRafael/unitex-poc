@@ -6,7 +6,14 @@ import { FileTree } from "./components/FileTree"
 import { PdfPreview } from "./components/PdfPreview"
 import { compileLatex } from "./latex/compiler"
 import { DEFAULT_FILES, DEFAULT_MAIN_TEX } from "./project/defaultProject"
-import { extractLatexError, inferMainTexPath, isTextFile } from "./project/files"
+import {
+  allocatePath,
+  dirMarkerPath,
+  extractLatexError,
+  inferMainTexPath,
+  isTextFile,
+  mergeProjectFiles,
+} from "./project/files"
 import type { ProjectFiles } from "./project/types"
 
 const PREVIEW_DEBOUNCE_MS = 800
@@ -102,6 +109,32 @@ function App() {
     setActivePath(mainPath ?? Object.keys(nextFiles)[0] ?? "")
   }
 
+  const handleAddFiles = (incoming: ProjectFiles) => {
+    let first = ""
+    setFiles((current) => {
+      const { files: next, added } = mergeProjectFiles(current, incoming)
+      first = added.find((path) => isTextFile(path)) ?? added[0] ?? ""
+      return next
+    })
+    if (first) setActivePath(first)
+  }
+
+  const handleCreateFile = (path: string) => {
+    let created = path
+    setFiles((current) => {
+      created = allocatePath(current, path)
+      return { ...current, [created]: "" }
+    })
+    setActivePath(created)
+  }
+
+  const handleCreateFolder = (path: string) => {
+    setFiles((current) => {
+      const dir = allocatePath(current, path)
+      return { ...current, [dirMarkerPath(dir)]: "" }
+    })
+  }
+
   const handleEditorChange = (value: string) => {
     if (!activePath || !isTextFile(activePath)) return
 
@@ -134,6 +167,9 @@ function App() {
           onSelect={setActivePath}
           onSetMain={setMainTexPath}
           onLoadProject={handleLoadProject}
+          onAddFiles={handleAddFiles}
+          onCreateFile={handleCreateFile}
+          onCreateFolder={handleCreateFolder}
         />
         <div className="h-full min-w-0 flex-1">
           <FilePane
