@@ -19,7 +19,7 @@ export function LatexEditor({ path, value, onChange }: LatexEditorProps) {
     <Editor
       language={language}
       path={path}
-      theme="vs-dark"
+      theme={LATEX_THEME_ID}
       value={value}
       onChange={(next) => onChange(next ?? "")}
       beforeMount={registerLatexLanguage}
@@ -34,7 +34,7 @@ export function LatexEditor({ path, value, onChange }: LatexEditorProps) {
         wordWrap: "on",
         wrappingIndent: "indent",
         fontSize: 14,
-        fontFamily: "Menlo, Monaco, 'Courier New', monospace",
+        fontFamily: "'Cascadia Mono', ui-monospace, monospace",
         lineHeight: 22,
         minimap: { enabled: false },
         padding: { top: 12, bottom: 12 },
@@ -47,7 +47,7 @@ export function LatexEditor({ path, value, onChange }: LatexEditorProps) {
         cursorBlinking: "smooth",
         cursorSmoothCaretAnimation: "on",
       }}
-      className="h-full w-full bg-[#1E1E2E]"
+      className="h-full w-full bg-paper"
     />
   )
 }

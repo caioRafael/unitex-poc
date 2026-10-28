@@ -6,7 +6,7 @@ import {
 import type { languages } from "monaco-editor"
 
 export const LATEX_LANGUAGE_ID = "latex"
-export const LATEX_THEME_ID = "unitex-dark"
+export const LATEX_THEME_ID = "unitex-light"
 
 const latexTokenizer: languages.IMonarchLanguage = {
   ...monarchTokenizer,
@@ -60,39 +60,40 @@ export function registerLatexLanguage(monaco: Monaco) {
   monaco.languages.setMonarchTokensProvider(LATEX_LANGUAGE_ID, latexTokenizer)
 
   monaco.editor.defineTheme(LATEX_THEME_ID, {
-    base: "vs-dark",
+    base: "vs",
     inherit: true,
     rules: [
-      { token: "comment", foreground: "7F848E", fontStyle: "italic" },
-      { token: "keyword", foreground: "C678DD" },
-      { token: "keyword.predefined", foreground: "C678DD", fontStyle: "bold" },
-      { token: "keyword.at", foreground: "56B6C2" },
-      { token: "tag", foreground: "E5C07B" },
-      { token: "string", foreground: "98C379" },
-      { token: "number", foreground: "D19A66" },
-      { token: "delimiter", foreground: "56B6C2" },
+      { token: "comment", foreground: "979BAD", fontStyle: "italic" },
+      { token: "keyword", foreground: "1D6C76" },
+      { token: "keyword.predefined", foreground: "1D6C76", fontStyle: "bold" },
+      { token: "keyword.at", foreground: "239DAD" },
+      { token: "tag", foreground: "1D6C76" },
+      { token: "string", foreground: "4B69C6" },
+      { token: "string.math", foreground: "1D6C76" },
+      { token: "number", foreground: "565565" },
+      { token: "delimiter", foreground: "239DAD" },
     ],
     colors: {
-      "editor.background": "#1E1E2E",
-      "editor.foreground": "#ABB2BF",
-      "editor.lineHighlightBackground": "#2A2B3C",
-      "editor.selectionBackground": "#3E4452",
-      "editor.inactiveSelectionBackground": "#3E445280",
-      "editorCursor.foreground": "#528BFF",
-      "editorLineNumber.foreground": "#495162",
-      "editorLineNumber.activeForeground": "#ABB2BF",
-      "editorGutter.background": "#1E1E2E",
-      "editorIndentGuide.background1": "#3B3C4A",
-      "editorIndentGuide.activeBackground1": "#5C5D6B",
-      "editorWhitespace.foreground": "#3B3C4A",
-      "editorWidget.background": "#252536",
-      "editorWidget.border": "#3B3C4A",
-      "editorSuggestWidget.background": "#252536",
-      "editorSuggestWidget.border": "#3B3C4A",
-      "editorSuggestWidget.selectedBackground": "#3E4452",
-      "scrollbarSlider.background": "#4B526380",
-      "scrollbarSlider.hoverBackground": "#5C6370",
-      "scrollbarSlider.activeBackground": "#747D8C",
+      "editor.background": "#FDFDFD",
+      "editor.foreground": "#19181F",
+      "editor.lineHighlightBackground": "#EFF0F3",
+      "editor.selectionBackground": "#C9EBE8",
+      "editor.inactiveSelectionBackground": "#E7F6F6",
+      "editorCursor.foreground": "#239DAD",
+      "editorLineNumber.foreground": "#979BAD",
+      "editorLineNumber.activeForeground": "#666675",
+      "editorGutter.background": "#FDFDFD",
+      "editorIndentGuide.background1": "#E4E5EA",
+      "editorIndentGuide.activeBackground1": "#CACCD6",
+      "editorWhitespace.foreground": "#E4E5EA",
+      "editorWidget.background": "#FDFDFD",
+      "editorWidget.border": "#E4E5EA",
+      "editorSuggestWidget.background": "#FDFDFD",
+      "editorSuggestWidget.border": "#E4E5EA",
+      "editorSuggestWidget.selectedBackground": "#E7F6F6",
+      "scrollbarSlider.background": "#CACCD680",
+      "scrollbarSlider.hoverBackground": "#B0B3C2",
+      "scrollbarSlider.activeBackground": "#979BAD",
     },
   })
 }

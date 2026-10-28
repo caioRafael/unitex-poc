@@ -161,8 +161,8 @@ export function FileTree({
 
   return (
     <div
-      className={`flex h-full w-64 shrink-0 flex-col border-r border-[#2A2B3C] bg-[#181825] text-sm text-[#ABB2BF] ${
-        dragOver ? "outline-2 -outline-offset-2 outline-[#528BFF]" : ""
+      className={`flex h-full w-64 shrink-0 flex-col border-r border-line bg-paper text-sm text-ink ${
+        dragOver ? "outline-2 -outline-offset-2 outline-teal" : ""
       }`}
       onDragEnter={(event) => {
         event.preventDefault()
@@ -194,22 +194,22 @@ export function FileTree({
       }}
       onContextMenu={(event) => openContextMenu(event, "")}
     >
-      <div className="border-b border-[#2A2B3C] px-3 py-2">
+      <div className="border-b border-line px-4 py-3">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-[#7F848E]">
-            Files
+          <span className="text-xs font-medium tracking-wide text-muted">
+            Arquivos
           </span>
           <button
             type="button"
-            title="Replace the virtual tree with a folder from disk"
+            title="Substituir a árvore por uma pasta do disco"
             onClick={() => openFolderRef.current?.click()}
-            className="rounded bg-[#2A2B3C] px-2 py-1 text-xs text-[#ABB2BF] hover:bg-[#3E4452]"
+            className="rounded-md px-2 py-1 text-xs text-teal hover:bg-teal-wash"
           >
-            Open folder
+            Abrir pasta
           </button>
         </div>
-        <p className="mt-2 text-[10px] text-[#7F848E]">
-          Right-click a folder to add files
+        <p className="mt-2 text-[11px] leading-4 text-faint">
+          Clique com o botão direito numa pasta para adicionar arquivos
         </p>
         <input
           ref={openFolderRef}
@@ -270,8 +270,9 @@ export function FileTree({
           />
         )}
         {tree.length === 0 && !draft ? (
-          <p className="px-3 py-4 text-xs text-[#7F848E]">
-            Right-click here to create a file. Changes stay in the browser.
+          <p className="px-4 py-4 text-xs leading-5 text-muted">
+            Clique com o botão direito aqui para criar um arquivo. As alterações
+            ficam no navegador.
           </p>
         ) : (
           tree.map((node) => (
@@ -357,7 +358,7 @@ function TreeContextMenu({
   onClose: () => void
 }) {
   const menuRef = useRef<HTMLDivElement>(null)
-  const left = Math.min(menu.x, window.innerWidth - 188)
+  const left = Math.min(menu.x, window.innerWidth - 248)
   const top = Math.min(menu.y, window.innerHeight - 220)
 
   useEffect(() => {
@@ -381,22 +382,22 @@ function TreeContextMenu({
       ref={menuRef}
       role="menu"
       style={{ left, top }}
-      className="fixed z-50 min-w-44 rounded border border-[#3B3C4A] bg-[#252536] py-1 text-xs text-[#ABB2BF] shadow-lg"
+      className="fixed z-50 min-w-60 rounded-md border border-line bg-paper py-1 text-xs text-ink shadow-sm"
       onPointerDown={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.stopPropagation()}
     >
-      <p className="truncate px-3 py-1.5 text-[10px] uppercase tracking-wide text-[#7F848E]">
+      <p className="truncate px-3 py-1.5 text-[10px] tracking-wide text-faint">
         {menu.dir || "/"}
       </p>
-      <MenuItem onClick={onNewFile}>New File</MenuItem>
-      <MenuItem onClick={onNewFolder}>New Folder</MenuItem>
-      <div className="my-1 border-t border-[#3B3C4A]" />
-      <MenuItem onClick={onAddFiles}>Add Files…</MenuItem>
-      <MenuItem onClick={onAddFolder}>Add Folder…</MenuItem>
+      <MenuItem onClick={onNewFile}>Novo arquivo</MenuItem>
+      <MenuItem onClick={onNewFolder}>Nova pasta</MenuItem>
+      <div className="my-1 border-t border-line" />
+      <MenuItem onClick={onAddFiles}>Adicionar arquivos…</MenuItem>
+      <MenuItem onClick={onAddFolder}>Adicionar pasta…</MenuItem>
       {onSetMain && (
         <>
-          <div className="my-1 border-t border-[#3B3C4A]" />
-          <MenuItem onClick={onSetMain}>Set as Main File</MenuItem>
+          <div className="my-1 border-t border-line" />
+          <MenuItem onClick={onSetMain}>Definir como arquivo principal</MenuItem>
         </>
       )}
     </div>
@@ -415,7 +416,7 @@ function MenuItem({
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="block w-full px-3 py-1.5 text-left hover:bg-[#3E4452] hover:text-white"
+      className="block w-full px-3 py-1.5 text-left hover:bg-teal-wash"
     >
       {children}
     </button>
@@ -467,7 +468,7 @@ function DraftInput({
       <input
         ref={inputRef}
         value={name}
-        aria-label={kind === "dir" ? "New folder name" : "New file name"}
+        aria-label={kind === "dir" ? "Nome da nova pasta" : "Nome do novo arquivo"}
         onChange={(event) => setName(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
@@ -481,7 +482,7 @@ function DraftInput({
           }
         }}
         onBlur={() => finish(true)}
-        className="min-w-0 flex-1 rounded bg-[#2A2B3C] px-1 py-0.5 text-xs text-white outline-none ring-1 ring-[#528BFF]"
+        className="min-w-0 flex-1 rounded bg-paper px-1 py-0.5 text-xs text-ink outline-none ring-1 ring-teal"
       />
     </div>
   )
@@ -538,8 +539,8 @@ function TreeItem({
         <button
           type="button"
           style={{ paddingLeft }}
-          className={`flex w-full items-center gap-1 py-0.5 pr-2 text-left hover:bg-[#2A2B3C] ${
-            isDrop ? "bg-[#528BFF]/20" : isTarget ? "bg-[#2A2B3C]" : ""
+          className={`flex w-full items-center gap-1 py-1 pr-2 text-left hover:bg-teal-wash ${
+            isDrop ? "bg-teal-wash" : isTarget ? "bg-well" : ""
           }`}
           onClick={() => onToggle(node.path)}
           onContextMenu={(event) => onContextMenu(event, node.path)}
@@ -604,8 +605,8 @@ function TreeItem({
   return (
     <div
       style={{ paddingLeft }}
-      className={`group flex w-full items-center gap-1 py-0.5 pr-2 ${
-        selected ? "bg-[#3E4452] text-white" : "hover:bg-[#2A2B3C]"
+      className={`group flex w-full items-center gap-1 py-1 pr-2 ${
+        selected ? "bg-teal-wash text-teal" : "hover:bg-teal-wash"
       }`}
       onContextMenu={(event) =>
         onContextMenu(event, parentDir(node.path), node.path)
@@ -621,19 +622,19 @@ function TreeItem({
         <FileIcon />
         <span className="truncate">{node.name}</span>
         {isMain && (
-          <span className="rounded bg-[#528BFF]/20 px-1 text-[10px] uppercase tracking-wide text-[#528BFF]">
-            main
+          <span className="rounded bg-paper px-1 text-[10px] tracking-wide text-teal">
+            principal
           </span>
         )}
       </button>
       {canBeMain && (
         <button
           type="button"
-          title="Set as main file"
+          title="Definir como arquivo principal"
           className={`shrink-0 text-xs ${
             isMain
-              ? "text-amber-400"
-              : "text-transparent group-hover:text-[#7F848E]"
+              ? "text-teal"
+              : "text-transparent group-hover:text-faint"
           }`}
           onClick={() => {
             onSetMain(node.path)
@@ -651,7 +652,7 @@ function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
       viewBox="0 0 16 16"
-      className={`h-3 w-3 shrink-0 text-[#7F848E] transition-transform ${
+      className={`h-3 w-3 shrink-0 text-faint transition-transform ${
         open ? "rotate-90" : ""
       }`}
       aria-hidden="true"
@@ -665,7 +666,7 @@ function FolderIcon() {
   return (
     <svg
       viewBox="0 0 16 16"
-      className="h-3.5 w-3.5 shrink-0 text-[#E5C07B]"
+      className="h-3.5 w-3.5 shrink-0 text-teal-deep"
       aria-hidden="true"
     >
       <path
@@ -680,7 +681,7 @@ function FileIcon() {
   return (
     <svg
       viewBox="0 0 16 16"
-      className="h-3.5 w-3.5 shrink-0 text-[#ABB2BF]"
+      className="h-3.5 w-3.5 shrink-0 text-faint"
       aria-hidden="true"
     >
       <path

@@ -145,18 +145,25 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-100">
-      <div className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-3 py-2">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-paper font-sans text-ink">
+      <div className="flex h-12 shrink-0 items-center gap-4 border-b border-line bg-paper px-4">
+        <span className="text-base font-medium tracking-tight text-teal">
+          Unitex
+        </span>
         <button
           onClick={handleCompile}
           disabled={status === "compiling"}
-          className="rounded bg-gray-900 px-3 py-1 text-sm text-white disabled:opacity-50"
+          className="rounded-md bg-teal px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-deep disabled:opacity-50"
         >
-          Compile
+          Compilar
         </button>
-        <span className="min-w-0 truncate text-xs text-gray-500">
+        <span
+          className={`min-w-0 truncate text-xs ${
+            status === "success" ? "text-teal" : "text-muted"
+          }`}
+        >
           {statusLabel(status, compileLog)}
-          {mainTexPath ? ` · main: ${mainTexPath}` : " · no main .tex"}
+          {mainTexPath ? ` · principal: ${mainTexPath}` : " · sem .tex principal"}
         </span>
       </div>
       <div className="flex min-h-0 min-w-0 flex-1">
@@ -178,14 +185,14 @@ function App() {
             onChange={handleEditorChange}
           />
         </div>
-        <div className="relative h-full w-1/2 min-w-0">
+        <div className="relative h-full w-1/2 min-w-0 border-l border-line">
           {status === "error" && compileLog ? (
             <CompileLog log={compileLog} />
           ) : pdf ? (
             <PdfPreview urlPdf={pdf} />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-neutral-200 text-gray-500">
-              Waiting for preview...
+            <div className="flex h-full w-full items-center justify-center bg-well text-sm text-muted">
+              Aguardando a pré-visualização
             </div>
           )}
           {status === "compiling" && <CompileOverlay />}
@@ -201,13 +208,13 @@ function statusLabel(
 ) {
   switch (status) {
     case "compiling":
-      return "Compiling..."
+      return "Compilando"
     case "success":
-      return "Ready"
+      return "Pronto"
     case "error":
-      return extractLatexError(compileLog ?? "") ?? "Error"
+      return extractLatexError(compileLog ?? "") ?? "Erro"
     default:
-      return "Idle"
+      return "Ocioso"
   }
 }
 

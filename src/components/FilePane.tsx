@@ -11,8 +11,8 @@ interface FilePaneProps {
 export function FilePane({ path, content, onChange }: FilePaneProps) {
   if (!path || content === undefined) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#1E1E2E] text-sm text-[#7F848E]">
-        Select a file to edit.
+      <div className="flex h-full items-center justify-center bg-paper text-sm text-muted">
+        Selecione um arquivo para editar.
       </div>
     )
   }
@@ -23,8 +23,8 @@ export function FilePane({ path, content, onChange }: FilePaneProps) {
     }
 
     return (
-      <div className="flex h-full items-center justify-center bg-[#1E1E2E] px-6 text-center text-sm text-[#7F848E]">
-        {path} is a binary file and cannot be edited here.
+      <div className="flex h-full items-center justify-center bg-paper px-6 text-center text-sm text-muted">
+        {path} é um arquivo binário e não pode ser editado aqui.
       </div>
     )
   }
@@ -43,7 +43,7 @@ function ImagePreview({ path, bytes }: { path: string; bytes: Uint8Array }) {
   }, [url])
 
   return (
-    <div className="flex h-full items-center justify-center bg-[#1E1E2E] p-6">
+    <div className="flex h-full items-center justify-center bg-paper p-6">
       <img
         src={url}
         alt={path}

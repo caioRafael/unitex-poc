@@ -40,7 +40,7 @@ export function PdfPreview({ urlPdf }: PdfPreviewProps) {
         const outputScale = window.devicePixelRatio || 1
 
         const canvas = document.createElement("canvas")
-        canvas.className = "mx-auto mb-4 bg-white shadow"
+        canvas.className = "mx-auto mb-4 bg-paper shadow-sm"
         canvas.width = Math.floor(viewport.width * outputScale)
         canvas.height = Math.floor(viewport.height * outputScale)
         canvas.style.width = `${Math.floor(viewport.width)}px`
@@ -84,7 +84,7 @@ export function PdfPreview({ urlPdf }: PdfPreviewProps) {
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-auto bg-neutral-200 p-4"
+      className="h-full w-full overflow-auto bg-well p-6"
     />
   )
 }
