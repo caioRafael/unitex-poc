@@ -10,6 +10,7 @@ import {
 } from "../project/library"
 import { filesFromFileList } from "../project/upload"
 import { openProject } from "../workspace/navigation"
+import { ThemeToggle } from "./ThemeToggle"
 
 const updatedAtLabel = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "medium",
@@ -138,7 +139,7 @@ export function Workspace() {
                 setError(null)
               }}
               disabled={busy}
-              className="rounded-md bg-teal px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-deep disabled:opacity-50"
+              className="rounded-md bg-teal px-3 py-1.5 text-sm font-medium text-on-teal hover:bg-teal-deep disabled:opacity-50"
             >
               Novo projeto
             </button>
@@ -159,6 +160,7 @@ export function Workspace() {
                 handleImport(event.target.files)
               }}
             />
+            <ThemeToggle />
           </div>
         </header>
 
@@ -179,7 +181,7 @@ export function Workspace() {
             <button
               type="submit"
               disabled={busy}
-              className="mt-5 rounded-md bg-teal px-3 py-2 text-sm font-medium text-white hover:bg-teal-deep disabled:opacity-50"
+              className="mt-5 rounded-md bg-teal px-3 py-2 text-sm font-medium text-on-teal hover:bg-teal-deep disabled:opacity-50"
             >
               Criar
             </button>
@@ -319,7 +321,7 @@ function ProjectCard({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-md bg-teal px-2 py-1 text-xs font-medium text-white hover:bg-teal-deep disabled:opacity-50"
+              className="rounded-md bg-teal px-2 py-1 text-xs font-medium text-on-teal hover:bg-teal-deep disabled:opacity-50"
             >
               Salvar
             </button>
@@ -362,7 +364,7 @@ function ProjectCard({
                 type="button"
                 onClick={submitDelete}
                 disabled={pending}
-                className="rounded-md bg-ink px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+                className="rounded-md bg-ink px-2 py-1 text-xs font-medium text-paper disabled:opacity-50"
               >
                 Apagar
               </button>

@@ -1,10 +1,12 @@
-import { Editor } from "@monaco-editor/react"
+import { useEffect, useRef } from "react"
+import { Editor, type Monaco } from "@monaco-editor/react"
 import {
   LATEX_LANGUAGE_ID,
-  LATEX_THEME_ID,
+  latexThemeId,
   registerLatexLanguage,
 } from "../latex/monacoLatex"
 import { fileExtension } from "../project/files"
+import { useTheme } from "../theme/useTheme"
 
 interface LatexEditorProps {
   path: string
@@ -14,21 +16,31 @@ interface LatexEditorProps {
 
 export function LatexEditor({ path, value, onChange }: LatexEditorProps) {
   const language = languageForPath(path)
+  const { resolved } = useTheme()
+  const monacoRef = useRef<Monaco | null>(null)
+  const themeId = latexThemeId(resolved)
+  const themeIdRef = useRef(themeId)
+
+  useEffect(() => {
+    themeIdRef.current = themeId
+    monacoRef.current?.editor.setTheme(themeId)
+  }, [themeId])
 
   return (
     <Editor
       language={language}
       path={path}
-      theme={LATEX_THEME_ID}
+      theme={themeId}
       value={value}
       onChange={(next) => onChange(next ?? "")}
       beforeMount={registerLatexLanguage}
       onMount={(editor, monaco) => {
+        monacoRef.current = monaco
         const model = editor.getModel()
         if (model) {
           monaco.editor.setModelLanguage(model, language)
         }
-        monaco.editor.setTheme(LATEX_THEME_ID)
+        monaco.editor.setTheme(themeIdRef.current)
       }}
       options={{
         wordWrap: "on",

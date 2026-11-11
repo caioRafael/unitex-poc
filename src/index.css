@@ -12,8 +12,29 @@
   --color-teal: #239dad;
   --color-teal-deep: #1d6c76;
   --color-teal-wash: #e7f6f6;
+  --color-on-teal: #ffffff;
   --color-error-wash: #ffcbc4;
   --color-log: #2a2934;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  --color-paper: #17161d;
+  --color-well: #23222b;
+  --color-ink: #f4f3f8;
+  --color-muted: #aeaab8;
+  --color-faint: #878492;
+  --color-line: #393746;
+  --color-teal: #3ec4d4;
+  --color-teal-deep: #8adbe3;
+  --color-teal-wash: #1a3338;
+  --color-on-teal: #102226;
+  --color-error-wash: #4a2c2a;
+  --color-log: #e7e5ef;
+  color-scheme: dark;
 }
 
 html,

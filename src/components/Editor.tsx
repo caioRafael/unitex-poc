@@ -20,6 +20,7 @@ import { CompileOverlay } from "./CompileOverlay"
 import { FilePane } from "./FilePane"
 import { FileTree } from "./FileTree"
 import { PdfPreview } from "./PdfPreview"
+import { ThemeToggle } from "./ThemeToggle"
 
 const SAVE_DEBOUNCE_MS = 400
 
@@ -64,7 +65,7 @@ export function Editor({ projectId }: EditorProps) {
         <button
           type="button"
           onClick={openWorkspace}
-          className="rounded-md bg-teal px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-deep"
+          className="rounded-md bg-teal px-3 py-1.5 text-sm font-medium text-on-teal hover:bg-teal-deep"
         >
           Voltar aos projetos
         </button>
@@ -310,12 +311,12 @@ function EditorSession({ project }: { project: ProjectRecord }) {
           type="button"
           onClick={compileNow}
           disabled={status === "compiling"}
-          className="rounded-md bg-teal px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-deep disabled:opacity-50"
+          className="rounded-md bg-teal px-3 py-1.5 text-sm font-medium text-on-teal hover:bg-teal-deep disabled:opacity-50"
         >
           Compilar
         </button>
         <span
-          className={`min-w-0 truncate text-xs ${
+          className={`min-w-0 flex-1 truncate text-xs ${
             status === "success" ? "text-teal" : "text-muted"
           }`}
         >
@@ -323,6 +324,7 @@ function EditorSession({ project }: { project: ProjectRecord }) {
           {mainTexPath ? ` · principal: ${mainTexPath}` : " · sem .tex principal"}
           {saveError ? " · não foi possível salvar" : ""}
         </span>
+        <ThemeToggle />
       </div>
       <div className="flex min-h-0 min-w-0 flex-1">
         <FileTree
